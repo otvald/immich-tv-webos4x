@@ -1,0 +1,24 @@
+Immich TV license notice
+========================
+
+This repository is mixed-license.
+
+Source code and tooling are licensed under the MIT License. See LICENSE.
+
+Bundled MP3 music assets are not MIT licensed. They are licensed separately
+under Creative Commons Attribution 4.0 International (CC BY 4.0):
+
+- "Inner Light" by Kevin MacLeod (incompetech.com)
+  Source: https://incompetech.com/
+  Licensed under Creative Commons Attribution 4.0 International
+  https://creativecommons.org/licenses/by/4.0/
+  No changes were made.
+
+- "Perspectives" by Kevin MacLeod (incompetech.com)
+  Source: https://incompetech.com/
+  Licensed under Creative Commons Attribution 4.0 International
+  https://creativecommons.org/licenses/by/4.0/
+  No changes were made.
+
+The per-track license text is also stored next to each MP3 file in the mp3/
+directory as a matching .license file and is displayed in the app Settings.
