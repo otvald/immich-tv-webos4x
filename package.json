@@ -5,16 +5,22 @@
 	"author": "Quentin Jean-Amans <quentin.sqja@gmail.com> (https://github.com/Seeky91)",
 	"main": "src/index.tsx",
 	"scripts": {
-		"serve": "enact serve",
-		"pack": "enact pack",
-		"pack-p": "enact pack -p && node tools/transpile-legacy.mjs",
-		"watch": "enact pack --watch",
-		"clean": "enact clean",
-		"lint": "enact lint .",
+		"serve": "npx --yes @enact/cli serve",
+		"music:manifest": "node tools/generate-music-manifest.mjs",
+		"music:copy": "node tools/generate-music-manifest.mjs --copy-to-dist",
+		"pack": "npm run music:manifest && npx --yes @enact/cli pack && npm run music:copy",
+		"pack-p": "npm run music:manifest && npx --yes @enact/cli pack -p && node tools/transpile-legacy.mjs && npm run music:copy",
+		"pack:modern": "WEBOS_TARGET=modern BROWSERSLIST_ENV=modern node tools/generate-appinfo.mjs && npm run music:manifest && WEBOS_TARGET=modern BROWSERSLIST_ENV=modern npx --yes @enact/cli pack -p && npm run music:copy",
+		"pack:legacy": "WEBOS_TARGET=legacy BROWSERSLIST_ENV=legacy node tools/generate-appinfo.mjs && npm run music:manifest && WEBOS_TARGET=legacy BROWSERSLIST_ENV=legacy npx --yes @enact/cli pack -p && WEBOS_TARGET=legacy BROWSERSLIST_ENV=legacy node tools/transpile-legacy.mjs && npm run music:copy",
+		"watch": "npx --yes @enact/cli pack --watch",
+		"clean": "npx --yes @enact/cli clean",
+		"lint": "npx --yes @enact/cli lint .",
 		"typecheck": "tsc --noEmit",
-		"license": "enact license",
-		"test": "enact test",
-		"test-watch": "enact test --watch"
+		"license": "npx --yes @enact/cli license",
+		"test": "npx jest",
+		"test-watch": "npx jest --watch",
+		"guard": "node tools/architecture-guard.js",
+		"audit:legacy": "node tools/audit-bundle.mjs dist/main.js"
 	},
 	"license": "MIT",
 	"repository": {
@@ -41,9 +47,17 @@
 		"theme": "sandstone",
 		"publicUrl": "./"
 	},
-	"browserslist": [
-		"Chrome >= 79"
-	],
+	"browserslist": {
+		"modern": [
+			"Chrome >= 79"
+		],
+		"legacy": [
+			"Chrome 53"
+		],
+		"default": [
+			"Chrome >= 79"
+		]
+	},
 	"eslintConfig": {
 		"extends": "enact-proxy"
 	},
@@ -52,16 +66,6 @@
 		"build/*",
 		"dist/*"
 	],
-	"jest": {
-		"moduleNameMapper": {
-			"^react$": "<rootDir>/node_modules/react/index.js",
-			"^react/jsx-runtime$": "<rootDir>/node_modules/react/jsx-runtime.js",
-			"^react/jsx-dev-runtime$": "<rootDir>/node_modules/react/jsx-dev-runtime.js",
-			"^react-dom$": "<rootDir>/node_modules/react-dom/index.js",
-			"^react-dom/client$": "<rootDir>/node_modules/react-dom/client.js",
-			"^@testing-library/react$": "<rootDir>/node_modules/@testing-library/react/dist/index.js"
-		}
-	},
 	"dependencies": {
 		"@enact/core": "^4.7.8",
 		"@enact/i18n": "^4.7.8",
@@ -76,13 +80,18 @@
 		"react-dom": "^18.2.0"
 	},
 	"devDependencies": {
+		"@babel/preset-env": "^7.29.7",
+		"@babel/preset-react": "^7.29.7",
+		"@babel/preset-typescript": "^7.29.7",
 		"@testing-library/react": "^16.3.1",
 		"@types/jest": "^30.0.0",
 		"@types/react": "^18.2.0",
 		"@types/react-dom": "^18.2.0",
+		"babel-jest": "^30.4.1",
 		"baseline-browser-mapping": "^2.9.14",
 		"esbuild": "^0.28.0",
 		"eslint-config-enact-proxy": "^1.0.7",
+		"jest-environment-jsdom": "^30.4.1",
 		"typescript": "^5.9.3"
 	}
 }

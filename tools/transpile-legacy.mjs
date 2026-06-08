@@ -1,17 +1,22 @@
 #!/usr/bin/env node
-// Transpiles dist/main.js down to webOS-compatible syntax (Chromium 68 / webOS 5.0+).
+// Transpiles dist/main.js down to webOS-compatible syntax (Chromium 53 / webOS 4.x).
 // Enact CLI excludes most node_modules from babel-loader, so dependencies like
 // @tanstack/query-core ship modern syntax (??=, ??, ?., #privateField, …) into the
 // bundle, which older webOS versions cannot parse. Combined with the runtime
 // polyfills in src/polyfills.ts, this brings the supported floor down to LG TVs
-// from 2018 onward (OLED CX 2020 included).
+// that still ship the Chromium 53-class webOS 4.x runtime.
 
 import { build, transform } from 'esbuild';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 
-const TARGET = 'chrome68';
+const TARGET = process.env.WEBOS_LEGACY_CHROMIUM_TARGET || 'chrome53';
 const BUNDLE = 'dist/main.js';
 const INDEX_HTML = 'dist/index.html';
+
+function formatBytes(bytes) {
+	return `${(bytes / 1024).toFixed(1)} KiB`;
+}
 
 if (!existsSync(BUNDLE)) {
 	console.error(`[transpile-legacy] missing input: ${BUNDLE}`);
@@ -53,12 +58,18 @@ await build({
 
 // Round-trip parse: re-feed the output to esbuild with the same target.
 // If unsupported syntax slipped through (or was reintroduced), this errors.
+const bundleBytes = readFileSync(BUNDLE);
+
 try {
-	await transform(readFileSync(BUNDLE, 'utf8'), { target: TARGET, loader: 'js' });
+	await transform(bundleBytes.toString('utf8'), { target: TARGET, loader: 'js' });
 } catch (err) {
 	console.error(`[transpile-legacy] FAILED: bundle does not parse cleanly under ${TARGET}`);
 	console.error(err.message || err);
 	process.exit(2);
 }
 
+const rawSize = statSync(BUNDLE).size;
+const gzipSize = gzipSync(bundleBytes).length;
+
+console.log(`[transpile-legacy] bundle size: raw=${formatBytes(rawSize)} gzip=${formatBytes(gzipSize)}`);
 console.log(`[transpile-legacy] ${BUNDLE} → ${TARGET} (parse-validated)`);
