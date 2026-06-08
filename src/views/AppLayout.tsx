@@ -1,10 +1,13 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {SIDEBAR_COLLAPSED_WIDTH} from '../utils/constants';
 import {createSpotlightContainer} from '../utils/spotlight';
 import {NavigationRail} from '../components/NavigationRail/NavigationRail';
+import {LegacyDebugOverlay} from '../components/LegacyDebugOverlay';
 import MainPanel from './MainPanel';
 import AlbumsPanel from './AlbumsPanel';
 import SearchPanel from './SearchPanel';
+import SettingsPanel from './SettingsPanel';
+import DiagnosticsPanel from './DiagnosticsPanel/DiagnosticsPanel';
 import type {View} from '../types/navigation';
 import css from './AppLayout.module.less';
 
@@ -16,21 +19,48 @@ interface AppLayoutProps {
 
 const ViewContainer = createSpotlightContainer({enterTo: 'last-focused'});
 
+const DEFAULT_VIEW: View = 'photos';
+
+function parseViewFromHash(hash: string): View {
+	const candidate = hash.replace(/^#\/?/, '');
+	return candidate === 'albums' || candidate === 'search' || candidate === 'settings' || candidate === 'diagnostics' || candidate === 'photos'
+		? candidate
+		: DEFAULT_VIEW;
+}
+
 const AppLayout: React.FC<AppLayoutProps> = ({onOpenAccount, accountLetter, accountGradient}) => {
-	const [activeView, setActiveView] = useState<View>('photos');
+	const [activeView, setActiveView] = useState<View>(() => parseViewFromHash(window.location.hash));
 	const [contentWidth, setContentWidth] = useState(window.innerWidth - SIDEBAR_COLLAPSED_WIDTH);
 
 	useEffect(() => {
 		const handleResize = () => setContentWidth(window.innerWidth - SIDEBAR_COLLAPSED_WIDTH);
+		const handleHashChange = () => setActiveView(parseViewFromHash(window.location.hash));
 		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
+		window.addEventListener('hashchange', handleHashChange);
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('hashchange', handleHashChange);
+		};
+	}, []);
+
+	const handleNavigate = useCallback((view: View) => {
+		window.location.hash = view === DEFAULT_VIEW ? '#/photos' : `#/${view}`;
+		setActiveView(view);
 	}, []);
 
 	return (
 		<div className={css.layout}>
+			<LegacyDebugOverlay
+				title="View Debug"
+				slot={1}
+				lines={[
+					{label: 'activeView', value: activeView},
+					{label: 'contentWidth', value: contentWidth},
+				]}
+			/>
 			<NavigationRail
 				activeView={activeView}
-				onNavigate={setActiveView}
+				onNavigate={handleNavigate}
 				onOpenAccount={onOpenAccount}
 				accountLetter={accountLetter}
 				accountGradient={accountGradient}
@@ -53,6 +83,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({onOpenAccount, accountLetter, acco
 				{activeView === 'search' && (
 					<div className={css.panelActive}>
 						<SearchPanel contentWidth={contentWidth} />
+					</div>
+				)}
+				{activeView === 'diagnostics' && (
+					<div className={css.panelActive}>
+						<DiagnosticsPanel />
+					</div>
+				)}
+				{activeView === 'settings' && (
+					<div className={css.panelActive}>
+						<SettingsPanel />
 					</div>
 				)}
 			</ViewContainer>
