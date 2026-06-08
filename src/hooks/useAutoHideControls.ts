@@ -44,13 +44,14 @@ export const useAutoHideControls = ({enabled, hideDelayMs = DEFAULT_HIDE_DELAY_M
 
 	useEffect(() => {
 		if (!enabled) {
-			setVisible(true);
 			clearTimer();
 			return undefined;
 		}
 
-		setVisible(true);
-		startTimer();
+		const resetTimer = window.setTimeout(() => {
+			setVisible(true);
+			startTimer();
+		}, 0);
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (!REVEAL_KEYS.has(event.key)) return;
@@ -73,10 +74,11 @@ export const useAutoHideControls = ({enabled, hideDelayMs = DEFAULT_HIDE_DELAY_M
 		// this to the bubble phase or to stopPropagation.
 		window.addEventListener('keydown', handleKeyDown, {capture: true});
 		return () => {
+			window.clearTimeout(resetTimer);
 			window.removeEventListener('keydown', handleKeyDown, {capture: true});
 			clearTimer();
 		};
 	}, [enabled, startTimer, clearTimer]);
 
-	return {visible};
+	return {visible: enabled ? visible : true};
 };

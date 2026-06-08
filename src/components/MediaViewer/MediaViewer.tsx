@@ -3,6 +3,8 @@ import Spotlight from '@enact/spotlight';
 import {useWebOSKeys} from '../../hooks/useWebOSKeys';
 import {useAutoHideControls} from '../../hooks/useAutoHideControls';
 import {useRepository} from '../../domain/RepositoryContext';
+import {createPerformanceAdapter} from '../../compat/performance-adapter';
+import {usePlatformFacade} from '../../platform';
 import {createSpotlightContainer} from '../../utils/spotlight';
 import type {TimelineAsset} from '../../domain/types';
 import {MediaControls, CLOSE_BUTTON_SPOTLIGHT_ID} from './MediaControls';
@@ -15,6 +17,8 @@ interface MediaViewerProps {
 	currentIndex: number;
 	onClose: () => void;
 	onNavigate: (direction: 'prev' | 'next') => void;
+	isSlideshowRunning?: boolean;
+	timePerViewSeconds?: number;
 }
 
 const VIEWER_SPOTLIGHT_ID = 'media-viewer';
@@ -22,9 +26,26 @@ const VIEWER_SPOTLIGHT_ID = 'media-viewer';
 // trigger NavigationRail's focus-based expand and other surprises).
 const ViewerContainer = createSpotlightContainer({enterTo: 'last-focused'});
 
-export const MediaViewer: React.FC<MediaViewerProps> = React.memo(({getAssetAt, totalCount, currentIndex, onClose, onNavigate}) => {
+export const MediaViewer: React.FC<MediaViewerProps> = React.memo(({getAssetAt, totalCount, currentIndex, onClose, onNavigate, isSlideshowRunning = false, timePerViewSeconds = 5}) => {
 	const repository = useRepository();
+	const platform = usePlatformFacade();
+	const performanceAdapter = createPerformanceAdapter(platform.capabilities);
 	const asset = getAssetAt(currentIndex);
+
+	const resolveImageUrl = useCallback(
+		(assetId: string) => {
+			switch (performanceAdapter.getPreferredImageVariant()) {
+				case 'original':
+					return repository.originalUrl(assetId);
+				case 'thumbnail':
+					return repository.thumbnailUrl(assetId);
+				case 'preview':
+				default:
+					return repository.previewUrl(assetId);
+			}
+		},
+		[performanceAdapter, repository],
+	);
 
 	const handlePrev = useCallback(() => {
 		if (currentIndex > 0) onNavigate('prev');
@@ -67,26 +88,34 @@ export const MediaViewer: React.FC<MediaViewerProps> = React.memo(({getAssetAt, 
 	}, [controlsVisible, isVideo]);
 
 	useEffect(() => {
+		if (performanceAdapter.getPrefetchStrategy() === 'disabled') return;
+
+		const prefetchCount = Math.max(1, Math.floor(performanceAdapter.getPrefetchCount() / 2));
 		const prefetch = (index: number) => {
 			const neighbor = getAssetAt(index);
 			if (!neighbor || neighbor.type === 'VIDEO') return;
 			const img = new Image();
-			img.src = repository.previewUrl(neighbor.id);
+			img.src = resolveImageUrl(neighbor.id);
 		};
-		prefetch(currentIndex - 1);
-		prefetch(currentIndex + 1);
-	}, [currentIndex, getAssetAt, repository]);
+
+		for (let offset = 1; offset <= prefetchCount; offset += 1) {
+			prefetch(currentIndex - offset);
+			prefetch(currentIndex + offset);
+		}
+	}, [currentIndex, getAssetAt, performanceAdapter, resolveImageUrl]);
 
 	if (!asset) return null;
 
-	const mediaUrl = isVideo ? repository.videoPlaybackUrl(asset.id) : repository.previewUrl(asset.id);
+	const mediaUrl = isVideo ? repository.videoPlaybackUrl(asset.id) : resolveImageUrl(asset.id);
 
 	return (
 		<ViewerContainer spotlightId={VIEWER_SPOTLIGHT_ID} spotlightRestrict="self-only" className={css.viewerOverlay}>
-			<div className={css.viewerContent}>{isVideo ? <VideoPlayer src={mediaUrl} /> : <img src={mediaUrl} alt="" className={css.viewerMedia} />}</div>
+			<div className={css.viewerContent}>{isVideo ? <VideoPlayer src={mediaUrl} /> : <img src={mediaUrl} alt="" className={css.viewerMedia} loading="eager" />}</div>
 			<MediaControls
 				currentIndex={currentIndex}
 				totalCount={totalCount}
+				isSlideshowRunning={isSlideshowRunning}
+				timePerViewSeconds={timePerViewSeconds}
 				onPrev={handlePrev}
 				onNext={handleNext}
 				onClose={onClose}

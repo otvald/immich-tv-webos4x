@@ -1,8 +1,9 @@
-import {useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import ri from '@enact/ui/resolution';
 import {calculateJustifiedLayout} from '../utils/justifiedLayout';
 import type {JustifiedLayoutResult} from '../utils/justifiedLayout';
 import {TARGET_ROW_HEIGHT_PX, GRID_GAP_PX, GRID_HORIZONTAL_PADDING_PX, BUCKET_HEADER_HEIGHT_PX, BUCKET_HEADER_MARGIN_PX} from '../utils/constants';
+import {getGalleryTileScale, subscribeSlideshowSettingsChanges} from '../utils/slideshowSettings';
 import type {TimelineBucket, DayGroup} from '../domain/types';
 
 interface UseTimelineLayoutOptions {
@@ -12,16 +13,19 @@ interface UseTimelineLayoutOptions {
 }
 
 export const useTimelineLayout = ({allBuckets, loadedGroups, viewportWidth}: UseTimelineLayoutOptions) => {
+	const [tileScale, setTileScale] = useState(getGalleryTileScale);
 	const headerBlock = ri.scale(BUCKET_HEADER_HEIGHT_PX) + ri.scale(BUCKET_HEADER_MARGIN_PX);
+
+	useEffect(() => subscribeSlideshowSettingsChanges(() => setTileScale(getGalleryTileScale())), []);
 
 	const layoutMap = useMemo(() => {
 		const map = new Map<string, JustifiedLayoutResult>();
 		for (const group of loadedGroups) {
 			const ratios = group.assets.map((a) => a.ratio);
-			map.set(group.timeBucket, calculateJustifiedLayout(ratios, viewportWidth));
+			map.set(group.timeBucket, calculateJustifiedLayout(ratios, viewportWidth, tileScale));
 		}
 		return map;
-	}, [loadedGroups, viewportWidth]);
+	}, [loadedGroups, viewportWidth, tileScale]);
 
 	const heightMap = useMemo(() => {
 		const map = new Map<string, number>();
@@ -32,7 +36,7 @@ export const useTimelineLayout = ({allBuckets, loadedGroups, viewportWidth}: Use
 	}, [layoutMap, headerBlock]);
 
 	const placeholderHeight = useMemo(() => {
-		const rowHeight = ri.scale(TARGET_ROW_HEIGHT_PX);
+		const rowHeight = ri.scale(TARGET_ROW_HEIGHT_PX * tileScale);
 		const gap = ri.scale(GRID_GAP_PX);
 		const rowCapacity = Math.max(1, Math.floor((viewportWidth - ri.scale(GRID_HORIZONTAL_PADDING_PX)) / rowHeight));
 		const loadedAssetCount = loadedGroups.reduce((sum, g) => sum + g.count, 0);
@@ -41,7 +45,7 @@ export const useTimelineLayout = ({allBuckets, loadedGroups, viewportWidth}: Use
 		const unloadedBuckets = Math.max(0, allBuckets.length - heightMap.size);
 		const estimatedRows = Math.ceil(unloadedAssets / rowCapacity);
 		return Math.max(0, estimatedRows * (rowHeight + gap) + unloadedBuckets * headerBlock);
-	}, [heightMap, headerBlock, allBuckets, loadedGroups, viewportWidth]);
+	}, [heightMap, headerBlock, allBuckets, loadedGroups, viewportWidth, tileScale]);
 
 	return {layoutMap, heightMap, placeholderHeight};
 };

@@ -8,6 +8,8 @@ export const CLOSE_BUTTON_SPOTLIGHT_ID = 'media-viewer-close';
 interface MediaControlsProps {
 	currentIndex: number;
 	totalCount: number;
+	isSlideshowRunning?: boolean;
+	timePerViewSeconds?: number;
 	onPrev: () => void;
 	onNext: () => void;
 	onClose: () => void;
@@ -16,21 +18,26 @@ interface MediaControlsProps {
 	controlsVisible: boolean;
 }
 
-export const MediaControls: React.FC<MediaControlsProps> = React.memo(({currentIndex, totalCount, onPrev, onNext, onClose, canGoPrev, canGoNext, controlsVisible}) => {
+export const MediaControls: React.FC<MediaControlsProps> = React.memo(({currentIndex, totalCount, isSlideshowRunning = false, timePerViewSeconds = 5, onPrev, onNext, onClose, canGoPrev, canGoNext, controlsVisible}) => {
 	const wrapperClass = controlsVisible ? css.controls : `${css.controls} ${css.controlsHidden}`;
+	const slideshowStatus = `Random play every ${timePerViewSeconds}s · STOP to stop`;
 
 	return (
-		<div className={wrapperClass}>
-			<div className={css.topBar}>
-				<Button icon="closex" onClick={onClose} spotlightId={CLOSE_BUTTON_SPOTLIGHT_ID} className={css.closeButton} />
-				<span className={css.counter}>
-					{currentIndex + 1} / {totalCount}
-				</span>
-			</div>
+		<>
+			{isSlideshowRunning && <div className={css.slideshowStatus}>{slideshowStatus}</div>}
 
-			{canGoPrev && <Button icon="arrowlargeleft" size="large" onClick={onPrev} className={`${css.navButton} ${css.navButtonLeft}`} />}
-			{canGoNext && <Button icon="arrowlargeright" size="large" onClick={onNext} className={`${css.navButton} ${css.navButtonRight}`} />}
-		</div>
+			<div className={wrapperClass}>
+				<div className={css.topBar}>
+					<Button icon="closex" onClick={onClose} spotlightId={CLOSE_BUTTON_SPOTLIGHT_ID} className={css.closeButton} />
+					<span className={css.counter}>
+						{currentIndex + 1} / {totalCount}
+					</span>
+				</div>
+
+				{canGoPrev && <Button icon="arrowlargeleft" size="large" onClick={onPrev} className={`${css.navButton} ${css.navButtonLeft}`} />}
+				{canGoNext && <Button icon="arrowlargeright" size="large" onClick={onNext} className={`${css.navButton} ${css.navButtonRight}`} />}
+			</div>
+		</>
 	);
 });
 

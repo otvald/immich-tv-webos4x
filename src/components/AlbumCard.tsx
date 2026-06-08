@@ -7,9 +7,10 @@ import css from './AlbumCard.module.less';
 interface AlbumCardProps {
 	album: Album;
 	onSelect?: (albumId: string) => void;
+	scale?: number;
 }
 
-export const AlbumCard: React.FC<AlbumCardProps> = React.memo(({album, onSelect}) => {
+export const AlbumCard: React.FC<AlbumCardProps> = React.memo(({album, onSelect, scale = 1}) => {
 	const repository = useRepository();
 	const thumbnailUrl = useMemo(
 		() => (album.albumThumbnailAssetId ? repository.thumbnailUrl(album.albumThumbnailAssetId) : null),
@@ -19,7 +20,7 @@ export const AlbumCard: React.FC<AlbumCardProps> = React.memo(({album, onSelect}
 	const handleClick = useCallback(() => onSelect?.(album.id), [album.id, onSelect]);
 
 	return (
-		<SpottableDiv className={css.albumCard} onClick={handleClick}>
+		<SpottableDiv className={css.albumCard} onClick={handleClick} style={{width: 240 * scale, height: 180 * scale}}>
 			{thumbnailUrl
 				? <img src={thumbnailUrl} alt="" className={css.thumbnail} loading="lazy" />
 				: <div className={css.placeholder} />

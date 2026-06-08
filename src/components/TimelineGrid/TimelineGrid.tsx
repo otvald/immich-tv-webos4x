@@ -6,11 +6,17 @@ import {DateHeader} from '../DateHeader';
 import {MediaViewer} from '../MediaViewer/MediaViewer';
 import {ErrorBoundary} from '../ErrorBoundary';
 import {useMediaViewer} from '../../hooks/useMediaViewer';
+import {useWebOSKeys} from '../../hooks/useWebOSKeys';
 import {useTimelineLayout} from '../../hooks/useTimelineLayout';
 import {useScrollPagination} from '../../hooks/useScrollPagination';
 import {ESTIMATED_ROW_HEIGHT_PX, MEDIA_VIEWER_PREFETCH_THRESHOLD} from '../../utils/constants';
 import type {DayGroup, TimelineAsset, TimelineBucket} from '../../domain/types';
 import css from './TimelineGrid.module.less';
+
+function isErrorOverlayVisible(): boolean {
+	const overlay = document.getElementById('immich-tv-boot-error');
+	return Boolean(overlay && overlay.style.display !== 'none');
+}
 
 interface TimelineGridPagination {
 	allBuckets: TimelineBucket[];
@@ -30,8 +36,16 @@ type GroupVirtualItem = DayGroup & {kind: 'group'; globalStartIndex: number};
 type PlaceholderVirtualItem = {kind: 'placeholder'; height: number; globalStartIndex: number};
 type VirtualItem = GroupVirtualItem | PlaceholderVirtualItem;
 
+function flattenAssets(groups: DayGroup[]): TimelineAsset[] {
+	const assets: TimelineAsset[] = [];
+	for (const group of groups) {
+		assets.push(...group.assets);
+	}
+	return assets;
+}
+
 export const TimelineGrid: React.FC<TimelineGridProps> = ({groups, contentWidth, style, pagination}) => {
-	const flatAssets = useMemo(() => groups.flatMap((g) => g.assets), [groups]);
+	const flatAssets = useMemo(() => flattenAssets(groups), [groups]);
 	const totalCount = flatAssets.length;
 	const getAssetAt = useCallback((i: number): TimelineAsset | null => flatAssets[i] ?? null, [flatAssets]);
 	const viewer = useMediaViewer(totalCount);
@@ -69,6 +83,17 @@ export const TimelineGrid: React.FC<TimelineGridProps> = ({groups, contentWidth,
 		isFetchingNextPage: pagination?.isFetchingNextPage ?? false,
 		fetchNextPage: pagination?.fetchNextPage ?? noop,
 		loadedGroupCount: groups.length,
+	});
+
+	const openRandomAsset = useCallback(() => {
+		if (totalCount <= 0) return;
+		if (isErrorOverlayVisible()) return;
+		viewer.startRandomSlideshow();
+	}, [totalCount, viewer]);
+
+	useWebOSKeys({
+		onPlay: openRandomAsset,
+		onStop: viewer.stopSlideshow,
 	});
 
 	useEffect(() => {
@@ -136,6 +161,8 @@ export const TimelineGrid: React.FC<TimelineGridProps> = ({groups, contentWidth,
 						currentIndex={viewer.state.assetIndex}
 						onClose={viewer.close}
 						onNavigate={viewer.navigate}
+						isSlideshowRunning={viewer.isSlideshowRunning}
+						timePerViewSeconds={viewer.timePerViewSeconds}
 					/>
 				</ErrorBoundary>
 			)}
