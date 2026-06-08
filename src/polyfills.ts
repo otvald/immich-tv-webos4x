@@ -1,19 +1,30 @@
 // Runtime polyfills for webOS 5.x (Chrome 68). Each polyfill is a feature-check
 // guard so this file is a no-op on modern Chromium. Hand-rolled (no core-js) to
-// keep the bundle small (~50 LOC of behavior vs ~140 KB of core-js/stable).
+// keep the bundle small.
 //
-// APIs covered (Chrome version that introduced each):
-//   Array.prototype.flat            (Chrome 69) — used in ImmichRepository
-//   Array.prototype.flatMap         (Chrome 69) — used in TimelineGrid, MainPanel
-//   Object.fromEntries              (Chrome 73) — used in NavigationRail
-//   globalThis                      (Chrome 71) — used by @tanstack/query-core
-//   Promise.allSettled              (Chrome 76) — safety
-//   String.prototype.matchAll       (Chrome 73) — safety
-//   Object.hasOwn                   (Chrome 93) — safety
+// Split Strategy:
+// ----------------
+// This file contains polyfills for Chrome 68 gaps (webOS 5.x floor):
+//   - Array.prototype.flat            (Chrome 69) — used in ImmichRepository
+//   - Array.prototype.flatMap         (Chrome 69) — used in TimelineGrid, MainPanel
+//   - Object.fromEntries              (Chrome 73) — used in NavigationRail
+//   - globalThis                      (Chrome 71) — used by @tanstack/query-core
+//
+// Additional polyfills for Chrome 53 gaps (webOS 4.x floor) are in:
+//   src/compat/polyfills-legacy.ts (loaded only when WEBOS_TARGET=legacy):
+//   - Promise.prototype.finally       (Chrome 63)
+//   - Promise.allSettled              (Chrome 76)
+//   - String.prototype.matchAll       (Chrome 73)
+//   - Object.hasOwn                   (Chrome 93)
 //
 // All assignments use `as any` casts because the TypeScript lib already declares
 // these on the prototypes, and reassigning them in TS code requires the cast.
 
+import appInfo from '../webos-meta/appinfo.json';
+import {applyLegacyPolyfills} from './compat/polyfills-legacy';
+
+// Array.prototype.flat (Chrome 69+)
+// Used in repository flattening helpers
 if (!Array.prototype.flat) {
 	(Array.prototype as any).flat = function flat(depth = 1) {
 		const flatten = (arr: any[], d: number): any[] =>
@@ -24,12 +35,16 @@ if (!Array.prototype.flat) {
 	};
 }
 
+// Array.prototype.flatMap (Chrome 69+)
+// Used in view-model composition (TimelineGrid, MainPanel)
 if (!Array.prototype.flatMap) {
 	(Array.prototype as any).flatMap = function flatMap(callback: (value: any, index: number, array: any[]) => any, thisArg?: any) {
 		return (this as any[]).map(callback, thisArg).reduce((acc: any[], val: any) => acc.concat(val), []);
 	};
 }
 
+// Object.fromEntries (Chrome 73+)
+// Used in NavigationRail state shaping
 if (!Object.fromEntries) {
 	(Object as any).fromEntries = function fromEntries(entries: Iterable<readonly [PropertyKey, any]>) {
 		const obj: Record<PropertyKey, any> = {};
@@ -40,6 +55,8 @@ if (!Object.fromEntries) {
 	};
 }
 
+// globalThis (Chrome 71+)
+// Used by webpack/runtime and @tanstack/query-core
 if (typeof globalThis === 'undefined') {
 	// In a browser, `window` is the global. In a worker, `self` is.
 	(function () {
@@ -48,32 +65,23 @@ if (typeof globalThis === 'undefined') {
 	})();
 }
 
-if (!Promise.allSettled) {
-	(Promise as any).allSettled = function allSettled(promises: Iterable<Promise<any>>) {
-		return Promise.all(
-			Array.from(promises, (p) =>
-				Promise.resolve(p).then(
-					(value) => ({status: 'fulfilled' as const, value}),
-					(reason) => ({status: 'rejected' as const, reason}),
-				),
-			),
-		);
+// Conditional loading of additional legacy polyfills for webOS 4.x (Chrome 53).
+// The packaged TV runtime does not reliably expose WEBOS_TARGET, so legacy
+// app IDs also activate this path.
+const runtimeProcess = (globalThis as typeof globalThis & {
+	process?: {
+		env?: Record<string, string | undefined>;
 	};
-}
+}).process;
 
-if (!String.prototype.matchAll) {
-	(String.prototype as any).matchAll = function* matchAll(regexp: RegExp) {
-		const flags = regexp.flags.includes('g') ? regexp.flags : regexp.flags + 'g';
-		const re = new RegExp(regexp.source, flags);
-		let match;
-		while ((match = re.exec(this as unknown as string)) !== null) {
-			yield match;
-		}
-	};
-}
+const palmSystem = (globalThis as typeof globalThis & {
+	PalmSystem?: {appid?: string};
+}).PalmSystem;
 
-if (!(Object as any).hasOwn) {
-	(Object as any).hasOwn = function hasOwn(obj: object, prop: PropertyKey) {
-		return Object.prototype.hasOwnProperty.call(obj, prop);
-	};
+if (
+	runtimeProcess?.env?.WEBOS_TARGET === 'legacy' ||
+	appInfo.id.includes('legacy') ||
+	palmSystem?.appid?.includes('legacy')
+) {
+	applyLegacyPolyfills();
 }

@@ -18,8 +18,8 @@ export interface JustifiedLayoutResult {
 	assetLayouts: AssetLayout[];
 }
 
-export function calculateJustifiedLayout(ratios: number[], viewportWidth: number): JustifiedLayoutResult {
-	const rowHeight = ri.scale(TARGET_ROW_HEIGHT_PX);
+export function calculateJustifiedLayout(ratios: number[], viewportWidth: number, tileScale = 1): JustifiedLayoutResult {
+	const rowHeight = ri.scale(TARGET_ROW_HEIGHT_PX * tileScale);
 	const gap = ri.scale(GRID_GAP_PX);
 	const containerWidth = viewportWidth - ri.scale(GRID_HORIZONTAL_PADDING_PX);
 	const rows: LayoutRow[] = [];

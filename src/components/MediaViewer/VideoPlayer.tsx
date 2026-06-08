@@ -1,5 +1,7 @@
 import React from 'react';
 import {VideoPlayer as SandstoneVideoPlayer} from '@enact/sandstone/VideoPlayer';
+import {usePlatformFacade} from '../../platform/facade';
+import {createMediaAdapter} from '../../compat/media-adapter';
 import css from './MediaViewer.module.less';
 
 interface VideoPlayerProps {
@@ -25,10 +27,28 @@ const PLAYER_PROPS = {
 	backButtonAriaLabel: HIDDEN_BACK_LABEL,
 };
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({src}) => (
-	<SandstoneVideoPlayer {...(PLAYER_PROPS as any)} className={css.viewerMedia}>
-		<source src={src} type="video/mp4" />
-	</SandstoneVideoPlayer>
-);
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({src}) => {
+	const platform = usePlatformFacade();
+	const adapter = createMediaAdapter(platform.getCapability('video'));
+
+	if (!adapter.shouldShowVideo()) {
+		const reason = adapter.getVideoUnsupportedReason();
+		return (
+			<div className={css.viewerMedia} data-testid="video-unsupported">
+				<div className={css.unsupportedMessage}>
+					<div className={css.unsupportedIcon}>⚠️</div>
+					<div className={css.unsupportedText}>Video playback unavailable</div>
+					{reason && <div className={css.unsupportedReason}>{reason}</div>}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<SandstoneVideoPlayer {...(PLAYER_PROPS as any)} className={css.viewerMedia}>
+			<source src={src} type="video/mp4" />
+		</SandstoneVideoPlayer>
+	);
+};
 
 VideoPlayer.displayName = 'VideoPlayer';

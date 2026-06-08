@@ -7,7 +7,7 @@ const useBuckets = () =>
 
 export const useInfiniteTimeline = () => {
 	const repository = useRepository();
-	const {data: allBuckets, isLoading: isBucketsLoading} = useBuckets();
+	const {data: allBuckets, error: bucketsError, isLoading: isBucketsLoading, status: bucketsStatus} = useBuckets();
 
 	const infiniteQuery = useInfiniteQuery({
 		queryKey: ['infinite-timeline'],
@@ -25,6 +25,11 @@ export const useInfiniteTimeline = () => {
 		...infiniteQuery,
 		isLoading: isBucketsLoading || infiniteQuery.isLoading,
 		allBuckets: allBuckets || [],
+		bucketsError,
+		bucketsStatus,
+		isBucketsLoading,
+		isTimelineEnabled: !!allBuckets && !isBucketsLoading,
+		timelineStatus: infiniteQuery.status,
 		totalBucketCount: allBuckets?.length || 0,
 	};
 };
