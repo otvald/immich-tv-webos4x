@@ -54,6 +54,11 @@ jobs:
           ares-package dist/ -o ./build/ -n
           ls -la build/
 
+      - name: Generate legacy manifest.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node tools/build-manifest.mjs "build/dk.otvald.immichtv.legacy_${VERSION}_all.ipk" build/manifest-legacy.json
+
       - name: Audit legacy bundle
         run: npm run audit:legacy
 
@@ -78,8 +83,10 @@ jobs:
           ares-package dist/ -o ./build/ -n
           ls -la build/
 
-      - name: Generate manifest.json
-        run: node tools/build-manifest.mjs build/*.ipk build/manifest.json
+      - name: Generate modern manifest.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node tools/build-manifest.mjs "build/dk.otvald.immichtv_${VERSION}_all.ipk" build/manifest-modern.json
 
       - name: Upload artifacts (manual runs)
         if: github.event_name == 'workflow_dispatch'
@@ -88,7 +95,7 @@ jobs:
           name: ipk-and-manifest
           path: |
             build/*.ipk
-            build/manifest.json
+            build/manifest-*.json
 
       - name: Create GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -96,6 +103,6 @@ jobs:
         with:
           files: |
             build/*.ipk
-            build/manifest.json
+            build/manifest-*.json
           fail_on_unmatched_files: true
           generate_release_notes: true
