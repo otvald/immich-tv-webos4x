@@ -3,7 +3,6 @@ import React, {useEffect, useState} from 'react';
 import {getLatestApiError} from '../api/errorStore';
 import {areDebugOverlaysEnabled, subscribeDebugOverlayChanges} from '../debug/debugSettings';
 import {usePlatformFacade} from '../platform';
-import appInfo from '../../webos-meta/appinfo.json';
 
 export interface DebugLine {
 	label: string;
@@ -26,7 +25,7 @@ export const LegacyDebugOverlay: React.FC<LegacyDebugOverlayProps> = ({title, li
 	const platform = usePlatformFacade();
 	const [latestApiError, setLatestApiError] = useState(getLatestApiError());
 	const [debugEnabled, setDebugEnabled] = useState(areDebugOverlaysEnabled);
-	const shouldShow = platform.target === 'legacy' || appInfo.id.includes('legacy');
+	const shouldShow = platform.target === 'legacy';
 
 	useEffect(() => subscribeDebugOverlayChanges(() => {
 		setDebugEnabled(areDebugOverlaysEnabled());
@@ -56,7 +55,6 @@ export const LegacyDebugOverlay: React.FC<LegacyDebugOverlayProps> = ({title, li
 		<div style={createOverlayStyle(slot)} aria-label={`${title} overlay`}>
 			<div style={titleStyle}>{title}</div>
 			<div>target: {platform.target}</div>
-			<div>appId: {appInfo.id}</div>
 			{lines.concat(errorLines).map((line) => (
 				<div key={`${line.label}:${formatValue(line.value)}`}>
 					{line.label}: {formatValue(line.value)}
