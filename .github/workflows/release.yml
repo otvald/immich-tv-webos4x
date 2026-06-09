@@ -1,5 +1,9 @@
 name: Release
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  WEBOS_CLI_VERSION: 3.2.3
+
 on:
   push:
     tags:
@@ -20,33 +24,57 @@ jobs:
           cache: 'npm'
 
       - name: Install global webOS tools
-        run: npm install -g @enact/cli @webos-tools/cli
+        run: npm install -g @enact/cli @webos-tools/cli@${WEBOS_CLI_VERSION}
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build app
+      - name: Build legacy app
         run: |
           node --version
           npm --version
           enact --version
-          npm run pack-p 2>&1 | tee build-output.log
+          WEBOS_TARGET=legacy BROWSERSLIST_ENV=legacy npm run pack:legacy 2>&1 | tee build-legacy.log
           EXIT=${PIPESTATUS[0]}
-          echo "Pack exit code: $EXIT"
+          echo "Legacy pack exit code: $EXIT"
           ls -la dist/ || echo "No dist directory"
           exit $EXIT
 
-      - name: Upload build log
+      - name: Upload legacy build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build-output.log
+          name: build-legacy-log
+          path: build-legacy.log
           if-no-files-found: warn
 
-      - name: Package IPK
+      - name: Package legacy IPK
         run: |
           mkdir -p build
+          ares-package dist/ -o ./build/ -n
+          ls -la build/
+
+      - name: Audit legacy bundle
+        run: npm run audit:legacy
+
+      - name: Build modern app
+        run: |
+          WEBOS_TARGET=modern BROWSERSLIST_ENV=modern npm run pack:modern 2>&1 | tee build-modern.log
+          EXIT=${PIPESTATUS[0]}
+          echo "Modern pack exit code: $EXIT"
+          ls -la dist/ || echo "No dist directory"
+          exit $EXIT
+
+      - name: Upload modern build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-modern-log
+          path: build-modern.log
+          if-no-files-found: warn
+
+      - name: Package modern IPK
+        run: |
           ares-package dist/ -o ./build/ -n
           ls -la build/
 
