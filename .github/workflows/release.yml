@@ -1,7 +1,6 @@
 name: Release
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   WEBOS_CLI_VERSION: 3.2.3
 
 on:
@@ -16,9 +15,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -42,7 +41,7 @@ jobs:
 
       - name: Upload legacy build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-legacy-log
           path: build-legacy.log
@@ -72,7 +71,7 @@ jobs:
 
       - name: Upload modern build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-modern-log
           path: build-modern.log
@@ -99,7 +98,7 @@ jobs:
 
       - name: Create GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             build/*.ipk

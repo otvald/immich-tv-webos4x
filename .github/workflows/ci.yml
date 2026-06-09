@@ -1,7 +1,6 @@
 name: CI
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   WEBOS_CLI_VERSION: 3.2.3
 
 on:
@@ -18,9 +17,9 @@ jobs:
   quality-gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -44,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality-gates
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -67,7 +66,7 @@ jobs:
 
       - name: Upload modern build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-modern-log
           path: build-modern.log
@@ -80,7 +79,7 @@ jobs:
           ls -la build/
 
       - name: Upload modern IPK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: modern-ipk
           path: build/*.ipk
@@ -90,9 +89,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality-gates
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -113,7 +112,7 @@ jobs:
 
       - name: Upload legacy build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-legacy-log
           path: build-legacy.log
@@ -126,7 +125,7 @@ jobs:
           ls -la build/
 
       - name: Upload legacy IPK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: legacy-ipk
           path: build/*.ipk
