@@ -34,9 +34,13 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 	return tag === 'INPUT' || tag === 'TEXTAREA';
 }
 
+function isEditingText(target: EventTarget | null): boolean {
+	return isEditableTarget(target) || isEditableTarget(document.activeElement);
+}
+
 export function shouldHandleBackKey(event: KeyboardEvent): boolean {
 	if (!BACK_KEYCODES.has(event.keyCode) && !matchesRemoteKeyAction(event, 'back')) return false;
-	if (event.keyCode === BACKSPACE_KEYCODE && isEditableTarget(event.target)) return false;
+	if (event.keyCode === BACKSPACE_KEYCODE && isEditingText(event.target)) return false;
 	return true;
 }
 

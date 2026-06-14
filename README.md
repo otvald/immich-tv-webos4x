@@ -1,54 +1,63 @@
 # Immich TV Enhanced (LG webOS)
 
-**Immich TV Enhanced** is a read-only client for [Immich](https://immich.app/) designed for LG webOS TVs. Built with the **Enact** framework and **Sandstone** UI library.
+**Immich TV Enhanced** is a read-only client for [Immich](https://immich.app/) designed for LG webOS TVs. It is built with [Enact](https://enactjs.com/) and Sandstone, and is navigated with the TV remote.
 
-This is a fork of [Seeky91/immich-tv-webos](https://github.com/Seeky91/immich-tv-webos). The fork is not intended to be a forever fork; the goal is to validate and maintain the webOS 4.x/C9 support, diagnostics, settings, random slideshow, and related improvements with the hope that suitable changes can be merged back into the original Immich TV project.
+This repository is a fork of [Seeky91/immich-tv-webos](https://github.com/Seeky91/immich-tv-webos). The fork is not intended to be a forever fork; the goal is to validate and maintain webOS 4.x/C9 support, diagnostics, settings, random slideshow, and related improvements with the hope that suitable changes can be merged back into the original Immich TV project.
 
 ---
 
-## 🚀 Key Features
+## ✨ Features
 
 * **Timeline View**: Infinite-scrolling photo/video timeline grouped by date.
-* **Albums**: Browse your Immich albums and explore each one with a date-grouped timeline.
-* **Search**: Smart text search powered by Immich's ML backend, plus face/person search via a People ribbon.
+* **Albums**: Browse Immich albums and explore each album with a date-grouped timeline.
+* **Search**: Smart text search powered by Immich's ML backend, plus face/person search through a People ribbon.
+* **Multiple accounts**: Add multiple Immich servers or accounts and switch between them.
 * **Justified Grid**: Layout that respects original aspect ratios while maintaining aligned rows.
-* **Virtualized List**: DOM node recycling via `VirtualList` for smooth performance on large libraries.
-* **Timeline Height Calculation**: Uses Immich API metadata to pre-calculate total content height for a stable scrollbar.
-* **NavigationRail**: Collapsible left sidebar (expands on D-pad focus) for switching between Photos, Albums, and Search.
-* **Settings**: Configure random-play timing, photo tile size, album card size, and optional bundled music playback from the TV UI.
+* **Virtualized List**: DOM node recycling via `VirtualList` for smoother performance on large libraries.
+* **NavigationRail**: Collapsible left sidebar for switching between Photos, Albums, Search, and Settings.
+* **Settings**: Configure random-play timing, tile sizes, remote key mappings, and optional bundled music playback from the TV UI.
 * **Random Play**: Press **PLAY** to start a timed random slideshow in the current Photos, Album, or Search context; press **STOP** to stop it.
-* **Native Focus Management**: Integration with the webOS Spotlight (D-pad) navigation system.
-* **Authentication**: Supports API Key and login credentials.
-* **Video Playback**: Support for video files using Sandstone media components.
+* **Remote-first controls**: D-pad and media-key integration through webOS Spotlight focus management.
+* **Authentication**: Supports API key and login credentials.
+* **Video Playback**: Video support through Sandstone media components.
 * **Diagnostics**: Export runtime diagnostics, capture remote key samples, clear stored error logs, and toggle legacy debug overlays from the app.
 
 ---
 
-## 🛠️ Technical Stack
+## 🧩 Compatibility
 
-| Technology | Usage |
-| :--- | :--- |
-| **Enact Framework** | LG's React-based framework optimized for webOS |
-| **Sandstone UI** | Native TV component library for premium look & feel |
-| **TypeScript** | Strict typing for codebase robustness and reliability |
-| **TanStack Query (v5)** | Server state management, caching, and infinite scroll logic |
-| **Immich API** | Direct integration with the Immich "Internal" API endpoints |
-
----
-
-## 📦 Installation & Development
-
-### Compatibility
-- **Modern**: webOS 5.0+ (LG TVs from 2018 onward, including OLED CX 2020).
-- **Legacy (Beta)**: webOS 4.x (LG C9 2019-class TVs). The legacy target uses extra transpilation, feature-checked polyfills, and compatibility shims from the same codebase. It remains beta until each release candidate is validated on real webOS 4.x hardware. Legacy is intended for direct Immich API access with an API key; it does not require a separate CORS proxy when installed as the packaged webOS app.
-
-### Multi-Target Builds
 The app supports dual targeting from a single codebase:
 
 | Target | Command | App ID | Notes |
 | :--- | :--- | :--- | :--- |
-| **Modern** | `npm run pack:modern` | `dk.otvald.immichtv` | Native ES2020+ |
-| **Legacy** | `npm run pack:legacy` | `dk.otvald.immichtv.legacy` | Transpiled/Polyfilled |
+| **Modern** | `npm run pack:modern` | `dk.otvald.immichtv` | webOS 5.0+ / modern Chromium target |
+| **Legacy (Beta)** | `npm run pack:legacy` | `dk.otvald.immichtv.legacy` | webOS 4.x / LG C9-class target with extra transpilation, polyfills, and compatibility shims |
+
+Legacy remains beta until each release candidate is validated on real webOS 4.x hardware. Do not treat `npm run serve`, a desktop browser, emulator behavior, or a successful package build as proof of LG C9/webOS 4.x compatibility.
+
+---
+
+## 📥 Installation
+
+### Homebrew Channel for upstream builds
+
+The original Immich TV app is published in the [webOS Homebrew Channel](https://www.webosbrew.org/) as `com.seeky91.immichtv`.
+
+1. Install the Homebrew Channel on your TV — see the [webosbrew install guide](https://www.webosbrew.org/pages/install.html).
+2. Open it, find [Immich TV](https://repo.webosbrew.org/apps/com.seeky91.immichtv), and install.
+3. Launch it from your TV's app launcher.
+
+### Fork releases and manual sideload
+
+Fork release assets use the Otvald app IDs so modern and legacy builds can be installed side-by-side:
+
+```bash
+# Modern
+npx ares-install ./webos-build/dk.otvald.immichtv_*.ipk --device <device-name>
+
+# Legacy
+npx ares-install ./webos-build/dk.otvald.immichtv.legacy_*.ipk --device <device-name>
+```
 
 Makefile wrappers are also available:
 
@@ -63,9 +72,69 @@ make launch-legacy
 
 `make install` defaults to the modern package. Use `make install-legacy` for webOS 4.x.
 
-### Legacy webOS 4.x build and verification
+---
 
-Legacy uses the Immich API directly and is tested around API-key access. You should not need to configure CORS for the packaged legacy app; the webOS package metadata enables the TV runtime cross-domain path. If you test in a desktop browser with `npm run serve`, browser CORS rules still apply because that is not the packaged TV runtime.
+## 🌐 Immich server setup (CORS)
+
+The app runs from a `file://` origin and calls the Immich API cross-origin. Immich ships no `Access-Control-Allow-Origin` headers by default, so whether it works out of the box depends on TV firmware and package metadata.
+
+The packaged legacy fork is intended for direct Immich API/API-key access and should not need a separate CORS proxy; `appinfo.json` enables the webOS runtime cross-domain path. Desktop development via `npm run serve` is different and may still hit browser CORS because it is not the packaged TV runtime.
+
+If a firmware still enforces browser-like CORS, Immich may log the request as `200 OK` while the TV blocks the response and the login screen shows:
+
+> Couldn't reach the server. Verify the URL and that your Immich server allows requests from this app (CORS).
+
+If you hit that error, allow this app's requests server-side. With nginx in front of Immich:
+
+```nginx
+add_header Access-Control-Allow-Origin  "*" always;
+add_header Access-Control-Allow-Headers "Authorization, x-api-key, Content-Type" always;
+add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+
+if ($request_method = OPTIONS) {
+    return 204;
+}
+```
+
+The equivalent directives work for Caddy, Traefik, or any reverse proxy. The app authenticates with `Authorization` / `x-api-key` headers and uses no cookies, so a wildcard origin is safe here.
+
+---
+
+## 🛠️ Building from source
+
+### Prerequisites
+
+* [Node.js](https://nodejs.org/) 20+
+* [Enact CLI](https://enactjs.com/docs/developer-tools/cli/) — `npm install -g @enact/cli`
+* [webOS CLI (ares)](https://webostv.developer.lge.com/develop/tools/cli-installation/) — `npm install -g @webos-tools/cli@3.2.3`
+
+Pin `@webos-tools/cli` to `3.2.3`: version `3.2.4` ships a rimraf 6 regression that breaks `ares-package`.
+
+### Setup
+
+```bash
+git clone https://github.com/otvald/immich-tv-webos4x.git
+cd immich-tv-webos
+npm install
+```
+
+### Develop
+
+```bash
+npm run serve
+```
+
+The dev server runs from `http://localhost`, so normal browser cross-origin rules apply.
+
+### Quality gates
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+node tools/architecture-guard.js
+npm run audit:legacy
+```
 
 Before installing or sharing a legacy IPK, run:
 
@@ -78,54 +147,34 @@ npm run audit:legacy
 
 `npm run pack:legacy` generates the legacy metadata, builds the production bundle, and runs the Chrome 53 transpile/parse validation step. `npm run audit:legacy` checks the final `dist/main.js` bundle for legacy syntax compatibility.
 
-For device testing:
-
-```bash
-make install-legacy
-make launch-legacy
-```
-
-Then smoke-test login, timeline browsing, album browsing, search, media opening, and Diagnostics JSON export on the TV. Do not treat `npm run serve`, a desktop browser, or a successful package build as proof of LG C9/webOS 4.x compatibility. Real-device diagnostics are required before calling the legacy target production-ready.
-
-#### Installation
-1. Ensure your TV is in **Developer Mode**.
-2. Install the desired target:
-```bash
-# Modern
-npx ares-install ./webos-build/dk.otvald.immichtv_*.ipk --device <device-name>
-
-# Legacy
-npx ares-install ./webos-build/dk.otvald.immichtv.legacy_*.ipk --device <device-name>
-```
-
-### Known Limitations (Legacy)
-- **Status**: Beta until verified on a real LG C9/webOS 4.x device for the specific IPK being released.
-- **Access mode**: Legacy is intended for Immich API/API-key access only.
-- **CORS**: No extra CORS proxy should be needed for the installed legacy webOS app. Desktop development via `npm run serve` is different and may still hit browser CORS.
-- **Performance**: High-resolution animations and large libraries may be slower on webOS 4.x hardware.
-- **Diagnostics**: Prefer the in-app Diagnostics panel and stored error log. `ares-inspect`, `ares-log`, and `ares-shell` may be unreliable or unavailable on some retail TV profiles.
-- **Validation**: Desktop browsers and `npm run serve` are development aids only; they do not emulate Chrome 53/webOS 4.x.
-
 ---
 
-### TV remote shortcuts and settings
+## 📺 TV remote shortcuts and settings
 
-| Action | Remote key |
+| Action | Default remote key |
 | :--- | :--- |
 | Start random slideshow in current context | **PLAY** (`415`) |
 | Stop random slideshow | **STOP** (`19`) |
+| Previous / next photo in media viewer | **Arrow Left** (`37`) / **Arrow Right** (`39`) |
 | Toggle legacy debug overlays | **BLUE** (`406`) |
-| Dismiss boot error overlay | **BACK**, **YELLOW**, or **Escape** |
+| Back / close current panel | **BACK** (`461`) plus built-in fallback variants |
 | Exit app attempt | **Backspace** (`8`) outside text fields |
 
-The **Settings** tab is available from the left rail. Settings are saved immediately to `localStorage` when changed and are loaded on app start.
+The **Settings** tab is available from the left rail. Settings are saved immediately to `localStorage` and loaded on app start.
 
 Configurable settings:
 
 * Random slideshow time per view: default `5s`.
 * Photos/timeline tile scale: default original `1×`.
 * Album overview card scale: default `2×`.
-* Optional bundled MP3 music shuffle: disabled by default. The app displays all bundled music license text below the music setting.
+* Remote key mappings for Back, Previous, Next, random play, random stop, diagnostics toggle, and exit app.
+* Optional bundled MP3 music shuffle: disabled by default. The app displays bundled music license text below the music setting.
+
+To find a key code for remapping, open Diagnostics and press the remote button you want to assign.
+
+---
+
+## 🎵 Bundled music assets
 
 Music files are packaged from `mp3/`. Every `mp3/<name>.mp3` must have a matching nonempty `mp3/<name>.license`; otherwise `npm run music:manifest` and package builds fail.
 
@@ -141,73 +190,38 @@ The generated app shuffles all valid licensed MP3 files when music is enabled in
 
 ---
 
-## 🏗️ Project Architecture
-The project follows a **"Shared Core, Target-Specific Edge"** architecture. 
-- **Shared Core**: All business logic and UI components are unified.
-- **Target-Specific Edge**: Platform-specific adaptations (polyfills, API shims) are isolated at the application boundaries.
-- **No Fork Rule**: Maintaining separate branches or directories for legacy code is strictly forbidden to ensure maintainability.
+## 🏗️ Architecture
 
-### Maintainer Guidance
-- **Additions**: New features must be tested against both targets.
-- **Guards**: Use `npm run audit:legacy` to ensure no ES2016+ syntax leaks into the legacy bundle.
-- **Target Detection**: Use the `useTarget` hook for platform-conditional logic.
+The project follows a **shared core, target-specific edge** architecture.
 
----
+* **Shared Core**: Business logic and UI components are unified.
+* **Target-Specific Edge**: Platform-specific adaptations, polyfills, API shims, syntax auditing, and metadata are isolated at the application boundaries.
+* **No Fork Rule**: Legacy support should not duplicate screens or app cores; changes should remain suitable for eventual upstreaming where possible.
 
-### Cross-origin requests (CORS)
-The app loads from `file://` and fetches the Immich API cross-origin. Immich does not ship CORS headers by default, so without help every browser blocks the response.
+Key areas:
 
-The `appinfo.json` ships `trustLevel: "netcast"` + `vendorExtension.allowCrossDomain: true`. These are LG-WAM-specific flags (undocumented by LG, well-known in the webosbrew community — same combo used by `youtube-webos`) that disable CORS validation for installed retail apps. They are silently ignored on webOS OSE / non-retail builds, and recent retail webOS (10.x+) doesn't need them, so adding them is safe across the board.
-
-If the bypass still doesn't apply for your firmware (you'll see "Couldn't reach the server. Verify the URL and that your Immich server allows requests from this app (CORS)" in the login panel), configure CORS server-side: add `Access-Control-Allow-Origin: *` to every Immich API response and answer `OPTIONS` with `204` (typically via the Caddy/Nginx/Traefik proxy in front of Immich).
-
-### Prerequisites
-* [Node.js](https://nodejs.org/) (v18 or v20 recommended)
-* [Enact CLI](https://enactjs.com/docs/developer-tools/cli/): ``` npm install -g @enact/cli ```
-* [webOS CLI (Ares)](https://webostv.developer.lge.com/develop/tools/cli-installation/): ``` npm install -g @webos-tools/cli ```
-
-### Project Setup
-```bash
-git clone https://github.com/Seeky91/immich-tv-webos.git
-cd immich-tv-webos
-npm install
-```
-
-### Development (PC)
-To bypass CORS issues during local development, use the configured proxy or launch your browser with security disabled.
-```bash
-npm run serve
-```
-
-### Deployment to TV
-1. Ensure your TV is in **Developer Mode** and on the same network.
-2. Call your device "lg-tv" (or modify the name in the Makefile), then:
-```bash
-make install   # builds and deploys the .ipk to the TV
-make launch    # launches the app
-```
+* `src/domain/` — `PhotoRepository` interface and `RepositoryContext` provider.
+* `src/api/` — concrete Immich repository, HTTP client, and Immich response types.
+* `src/hooks/` — TanStack Query wrappers plus webOS UI hooks.
+* `src/views/` and `src/components/` — TV UI built on Enact + Sandstone.
+* `tools/transpile-legacy.mjs` and `tools/audit-bundle.mjs` — legacy Chromium 53 build and audit path.
 
 ---
 
-## 🏗️ Project Architecture
+## ⚠️ Known limitations (legacy)
 
-* `src/api/` — HTTP client, auth header injection, Immich API calls, and strict type definitions.
-* `src/hooks/` — All data and UI logic:
-  * Auth: `useAuth`
-  * Asset data: `useInfiniteGroupedAssets`, `useAllAssets`, `useBuckets`
-  * Albums: `useAlbums`, `useAlbumDetails`
-  * Search: `useImmichSearchResults`, `useImmichPeople`
-  * Performance: `useHeightMap`, `useScrollPagination`
-  * webOS: `useWebOSKeys` (D-pad remote key handling)
-* `src/views/` — Primary screens: `LoginPanel`, `AppLayout`, `MainPanel` (timeline), `AlbumsPanel`, `AlbumView`, `SearchPanel`.
-* `src/components/` — Atomic UI units: `AssetCard`, `AlbumCard`, `NavigationRail`, `GroupedTimeline`, `MediaViewer`, `PeopleRibbon`, `DateHeader`.
-* `src/utils/` — Justified layout engine, height map calculation, date/duration formatting, localStorage helpers.
+* **Status**: Beta until verified on a real LG C9/webOS 4.x device for the specific IPK being released.
+* **Access mode**: Legacy is intended for Immich API/API-key access.
+* **CORS**: No extra CORS proxy should be needed for the installed legacy webOS app. Desktop development via `npm run serve` is different and may still hit browser CORS.
+* **Performance**: High-resolution animations and large libraries may be slower on webOS 4.x hardware.
+* **Diagnostics**: Prefer the in-app Diagnostics panel and stored error log. `ares-inspect`, `ares-log`, and `ares-shell` may be unreliable or unavailable on some retail TV profiles.
+* **Validation**: Desktop browsers and `npm run serve` are development aids only; they do not emulate Chrome 53/webOS 4.x.
 
 ---
 
 ## ⚖️ Disclaimer
 
-This is an unofficial third-party client. It is not affiliated with the official Immich development team. The application is provided "as is," optimized for personal use on LG Smart TVs.
+Immich TV is an unofficial, third-party client. It is not affiliated with or endorsed by the Immich project. Provided as-is for personal use on LG Smart TVs.
 
 ---
 
@@ -236,21 +250,14 @@ The included music files are **not** MIT licensed:
   <https://creativecommons.org/licenses/by/4.0/>  
   No changes were made.
 
-Per-track license text is stored next to each MP3 in `mp3/*.license` and displayed in the app Settings. See [`NOTICE`](./NOTICE) for the bundled asset attribution notice.
+Per-track license text is stored next to each MP3 in `mp3/*.license` and displayed in app Settings. See [`NOTICE`](./NOTICE) for bundled asset attribution.
 
 ---
 
 ## 💸 Support
 
-If this app is useful to you and you'd like to drop a tip, you can send Bitcoin to:
+If Immich TV is useful to you, you can leave a tip in Bitcoin — entirely optional, the project is and will remain free and open-source.
 
-```
+```text
 bc1qvxczfmurlglff6zmkgysnxy2yglvwspalcd373
 ```
-
-Totally optional — the project is and will remain free and open-source.
-
----
-
-
-**Built with ❤️ for the Immich community.**

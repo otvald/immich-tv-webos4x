@@ -23,6 +23,8 @@ jobs:
           cache: 'npm'
 
       - name: Install global webOS tools
+        # @webos-tools/cli is pinned to 3.2.3: 3.2.4 bumps rimraf to 6.x, which is no
+        # longer callable the way ares-package invokes it and breaks the Package IPK step.
         run: npm install -g @enact/cli @webos-tools/cli@${WEBOS_CLI_VERSION}
 
       - name: Install dependencies
@@ -89,7 +91,7 @@ jobs:
 
       - name: Upload artifacts (manual runs)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ipk-and-manifest
           path: |

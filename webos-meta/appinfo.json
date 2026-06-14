@@ -1,6 +1,6 @@
 {
 	"id": "dk.otvald.immichtv.legacy",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"vendor": "Otvald (fork of Seeky91)",
 	"type": "web",
 	"main": "index.html",

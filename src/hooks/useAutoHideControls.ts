@@ -18,8 +18,19 @@ const REVEAL_KEYS = new Set(['Enter', 'ArrowUp', 'ArrowDown']);
 
 export const useAutoHideControls = ({enabled, hideDelayMs = DEFAULT_HIDE_DELAY_MS}: UseAutoHideControlsOptions): AutoHideControls => {
 	const [visible, setVisible] = useState(true);
+	const [wasEnabled, setWasEnabled] = useState(enabled);
 	const timerRef = useRef<number | null>(null);
 	const visibleRef = useRef(visible);
+
+	// Reset to visible when auto-hide (re)enables (e.g. moving from a video back to a photo).
+	// This adjusts state on a prop change during render — not in an effect — which is the
+	// pattern react.dev/learn/you-might-not-need-an-effect prescribes and what satisfies the
+	// `react-hooks/set-state-in-effect` rule (Enact CI strict). The disabled case needs no
+	// state at all: it's derived in the returned value below.
+	if (enabled !== wasEnabled) {
+		setWasEnabled(enabled);
+		if (enabled) setVisible(true);
+	}
 
 	// Mirror `visible` into a ref so the once-installed window listener always reads the
 	// current value without re-subscribing. Synced in an effect — never written during render
@@ -48,10 +59,7 @@ export const useAutoHideControls = ({enabled, hideDelayMs = DEFAULT_HIDE_DELAY_M
 			return undefined;
 		}
 
-		const resetTimer = window.setTimeout(() => {
-			setVisible(true);
-			startTimer();
-		}, 0);
+		startTimer();
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (!REVEAL_KEYS.has(event.key)) return;
@@ -74,11 +82,12 @@ export const useAutoHideControls = ({enabled, hideDelayMs = DEFAULT_HIDE_DELAY_M
 		// this to the bubble phase or to stopPropagation.
 		window.addEventListener('keydown', handleKeyDown, {capture: true});
 		return () => {
-			window.clearTimeout(resetTimer);
 			window.removeEventListener('keydown', handleKeyDown, {capture: true});
 			clearTimer();
 		};
 	}, [enabled, startTimer, clearTimer]);
 
+	// Derive the disabled case instead of storing it: while auto-hide is off the controls are
+	// always shown, whatever internal `visible` state was left over from a previous photo.
 	return {visible: enabled ? visible : true};
 };
