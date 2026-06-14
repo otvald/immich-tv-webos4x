@@ -10,6 +10,7 @@ import {createPlatformFacade, PlatformFacadeProvider, usePlatformFacade, type Pl
 import {LegacyDebugOverlay, type DebugLine} from '../components/LegacyDebugOverlay';
 import {MusicPlayer} from '../components/MusicPlayer';
 import {isDebugOverlayToggleKey, toggleDebugOverlaysEnabled} from '../debug/debugSettings';
+import {matchesRemoteKeyAction} from '../utils/remoteKeySettings';
 import AppLayout from '../views/AppLayout';
 import {AccountPanel} from '../views/AccountPanel/AccountPanel';
 import {deriveLabel, pickGradient} from '../utils/accountVisual';
@@ -59,7 +60,7 @@ const AppBase: React.FC = () => {
 
 	useEffect(() => {
 		const handleBackspaceExit = (event: KeyboardEvent) => {
-			if (event.keyCode !== 8 || isEditableTarget(event.target)) return;
+			if (!matchesRemoteKeyAction(event, 'exitApp') || isEditableTarget(event.target)) return;
 			try {
 				window.close();
 			} catch {

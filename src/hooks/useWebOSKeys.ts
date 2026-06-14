@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
 import {createBackHandlerStack, shouldHandleBackKey, type BackHandlerStack} from '../compat/input-adapter';
+import {matchesRemoteKeyAction} from '../utils/remoteKeySettings';
 
 interface UseWebOSKeysOptions {
 	onBack?: () => void;
@@ -14,11 +15,11 @@ const backStack: BackHandlerStack = createBackHandlerStack();
 let bridgeInstalled = false;
 
 function isPlayKey(event: KeyboardEvent): boolean {
-	return event.keyCode === 415 || event.key === 'Play' || event.key === 'MediaPlay' || event.code === 'MediaPlay';
+	return matchesRemoteKeyAction(event, 'randomPlay');
 }
 
 function isStopKey(event: KeyboardEvent): boolean {
-	return event.keyCode === 19 || event.key === 'Stop' || event.key === 'MediaStop' || event.code === 'MediaStop';
+	return matchesRemoteKeyAction(event, 'randomStop');
 }
 
 function ensureBridgeInstalled(): void {
@@ -48,10 +49,10 @@ export const useWebOSKeys = ({onBack, onArrowLeft, onArrowRight, onPlay, onStop}
 		}
 
 		const handleArrowKeys = (event: KeyboardEvent) => {
-			if (event.key === 'ArrowLeft' && onArrowLeft) {
+			if (matchesRemoteKeyAction(event, 'previous') && onArrowLeft) {
 				event.preventDefault();
 				onArrowLeft();
-			} else if (event.key === 'ArrowRight' && onArrowRight) {
+			} else if (matchesRemoteKeyAction(event, 'next') && onArrowRight) {
 				event.preventDefault();
 				onArrowRight();
 			}

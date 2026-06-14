@@ -17,23 +17,38 @@ import {
 	subscribeSlideshowSettingsChanges,
 } from '../utils/slideshowSettings';
 import {musicTracks} from '../generated/musicManifest';
+import {
+	getRemoteKeyActionDefinitions,
+	getRemoteKeyBindings,
+	resetRemoteKeyBinding,
+	resetRemoteKeyBindings,
+	setRemoteKeyBinding,
+	subscribeRemoteKeySettingsChanges,
+	type RemoteKeyAction,
+} from '../utils/remoteKeySettings';
 import css from './SettingsPanel.module.less';
 
 const SettingsContainer = createSpotlightContainer({enterTo: 'last-focused'});
 const {min: MIN_SECONDS, max: MAX_SECONDS} = getTimePerViewBounds();
 const {min: MIN_TILE_SCALE, max: MAX_TILE_SCALE} = getTileScaleBounds();
+const REMOTE_KEY_ACTIONS = getRemoteKeyActionDefinitions();
 
 const SettingsPanel: React.FC = () => {
 	const [timePerView, setTimePerView] = useState(getTimePerViewSeconds);
 	const [tileScale, setTileScale] = useState(getGalleryTileScale);
 	const [albumTileScale, setAlbumTileScaleState] = useState(getAlbumTileScale);
 	const [musicEnabled, setMusicEnabledState] = useState(isMusicEnabled);
+	const [remoteKeyBindings, setRemoteKeyBindings] = useState(getRemoteKeyBindings);
 
 	useEffect(() => subscribeSlideshowSettingsChanges(() => {
 		setTimePerView(getTimePerViewSeconds());
 		setTileScale(getGalleryTileScale());
 		setAlbumTileScaleState(getAlbumTileScale());
 		setMusicEnabledState(isMusicEnabled());
+	}), []);
+
+	useEffect(() => subscribeRemoteKeySettingsChanges(() => {
+		setRemoteKeyBindings(getRemoteKeyBindings());
 	}), []);
 
 	const persistTimePerView = useCallback((seconds: number) => {
@@ -76,6 +91,18 @@ const SettingsPanel: React.FC = () => {
 			setMusicEnabled(next);
 			return next;
 		});
+	}, []);
+
+	const handleRemoteKeyChange = useCallback((action: RemoteKeyAction, event: React.ChangeEvent<HTMLInputElement>) => {
+		setRemoteKeyBindings({...getRemoteKeyBindings(), [action]: setRemoteKeyBinding(action, Number(event.currentTarget.value))});
+	}, []);
+
+	const handleRemoteKeyReset = useCallback((action: RemoteKeyAction) => {
+		setRemoteKeyBindings({...getRemoteKeyBindings(), [action]: resetRemoteKeyBinding(action)});
+	}, []);
+
+	const handleRemoteKeysResetAll = useCallback(() => {
+		setRemoteKeyBindings(resetRemoteKeyBindings());
 	}, []);
 
 	const licenseText = musicTracks.length > 0
@@ -158,6 +185,44 @@ const SettingsPanel: React.FC = () => {
 
 				<p className={css.hint}>Licensed tracks available: {musicTracks.length}. Playback may start after the first user interaction if the TV blocks autoplay.</p>
 				<pre className={css.licenseWindow} aria-label="Bundled music licenses">{licenseText}</pre>
+			</section>
+
+			<section className={css.card} aria-label="Remote key settings">
+				<div>
+					<h2>Remote keys</h2>
+					<p>These are the remote shortcuts Immich TV uses. Enter a numeric key code to remap an action, or reset to restore the default TV mapping.</p>
+				</div>
+
+				<div className={css.keyMapList}>
+					{REMOTE_KEY_ACTIONS.map((definition) => (
+						<div key={definition.action} className={css.keyMapRow}>
+							<div className={css.keyMapDescription}>
+								<strong>{definition.label}</strong>
+								<span>{definition.description}</span>
+								<span className={css.hint}>Default: {definition.defaultKeyLabel}</span>
+							</div>
+
+							<label className={css.valueLabel}>
+								<span>Key code</span>
+								<input
+									aria-label={`${definition.label} key code`}
+									className={css.numberInput}
+									type="number"
+									min={1}
+									max={9999}
+									step={1}
+									value={remoteKeyBindings[definition.action]}
+									onChange={(event) => handleRemoteKeyChange(definition.action, event)}
+								/>
+							</label>
+
+							<button type="button" className={css.button} aria-label={`Reset ${definition.label} key code`} onClick={() => handleRemoteKeyReset(definition.action)}>Reset</button>
+						</div>
+					))}
+				</div>
+
+				<button type="button" className={css.button} onClick={handleRemoteKeysResetAll}>Reset all remote keys</button>
+				<p className={css.hint}>Tip: open Diagnostics and press a remote button to see its keyCode before assigning it here.</p>
 			</section>
 		</SettingsContainer>
 	);

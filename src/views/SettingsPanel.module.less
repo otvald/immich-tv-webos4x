@@ -96,3 +96,30 @@
 	white-space: pre-wrap;
 	word-break: break-word;
 }
+
+.keyMapList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.keyMapRow {
+	display: grid;
+	grid-template-columns: minmax(18rem, 1fr) auto auto;
+	gap: 0.75rem;
+	align-items: end;
+	padding: 0.75rem;
+	border-radius: 0.7rem;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.keyMapDescription {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+}
+
+.keyMapDescription span {
+	opacity: 0.82;
+}

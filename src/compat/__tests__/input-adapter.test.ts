@@ -4,8 +4,14 @@ import {
 	isEditableTarget,
 	createBackHandlerStack,
 } from '../input-adapter';
+import {resetRemoteKeyBindings, setRemoteKeyBinding} from '../../utils/remoteKeySettings';
 
 describe('input-adapter', () => {
+	beforeEach(() => {
+		window.localStorage.clear();
+		resetRemoteKeyBindings();
+	});
+
 	describe('normalizeKeyEvent', () => {
 		test('normalizes legacy Back keycode 461 to Back', () => {
 			const event = new KeyboardEvent('keydown', {keyCode: 461});
@@ -167,6 +173,15 @@ describe('input-adapter', () => {
 			Object.defineProperty(event, 'target', {value: div, writable: false});
 
 			expect(shouldHandleBackKey(event)).toBe(false);
+		});
+
+		test('returns true for custom Back key binding', () => {
+			const div = document.createElement('div');
+			setRemoteKeyBinding('back', 405);
+			const event = new KeyboardEvent('keydown', {keyCode: 405});
+			Object.defineProperty(event, 'target', {value: div, writable: false});
+
+			expect(shouldHandleBackKey(event)).toBe(true);
 		});
 	});
 

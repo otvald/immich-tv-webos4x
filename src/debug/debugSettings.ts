@@ -1,3 +1,5 @@
+import {matchesRemoteKeyAction} from '../utils/remoteKeySettings';
+
 const DEBUG_OVERLAY_KEY = 'immich-tv-debug-overlays-enabled';
 const DEBUG_OVERLAY_EVENT = 'immich-tv-debug-overlays-changed';
 
@@ -6,7 +8,7 @@ function defaultEnabled(): boolean {
 }
 
 export function isDebugOverlayToggleKey(event: KeyboardEvent): boolean {
-	return event.keyCode === 406 || event.key === 'Blue' || event.code === 'ColorF3Blue';
+	return matchesRemoteKeyAction(event, 'toggleDebug');
 }
 
 export function areDebugOverlaysEnabled(): boolean {
